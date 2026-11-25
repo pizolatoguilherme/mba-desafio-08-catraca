@@ -21,7 +21,8 @@ COPY --from=build /app/dist ./dist
 COPY src/views ./src/views
 COPY migrations ./migrations
 EXPOSE 3000
-CMD ["node", "dist/server.js"]
+# migrate -> seed -> server; com exec, o node vira o processo principal e recebe o SIGTERM do down.
+CMD ["sh", "-c", "node dist/migrate.js && node dist/seed.js && exec node dist/server.js"]
 
 FROM deps AS dev
 COPY . .

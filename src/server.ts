@@ -58,7 +58,8 @@ export async function buildApp(opts?: { startDispatcher?: boolean }): Promise<Fa
   await app.register(cookie);
   await app.register(view, { engine: { ejs }, root: VIEWS_DIR, layout: 'layout.ejs' });
 
-  app.get('/healthz', async (_req, reply) => {
+  // O healthcheck do Compose chama /healthz a cada 2 s: não polui o log com cada requisição.
+  app.get('/healthz', { logLevel: 'warn' }, async (_req, reply) => {
     try {
       await query('SELECT 1');
       return reply.code(200).send({ ok: true });
