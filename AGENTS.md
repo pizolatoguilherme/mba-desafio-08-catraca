@@ -32,7 +32,8 @@ Variáveis úteis (todas têm default; nenhuma é obrigatória):
 7. **Uma feature por branch** (`feat/Fxx-slug`), integrada à `main` por PR. Ninguém faz commit direto na `main` com código de feature.
 8. **Gates verdes antes do PR:** `npm run gates` precisa passar na branch.
 9. **Não toque no que não é seu:** altere apenas os arquivos que a spec da feature prevê. Se precisar mudar uma interface provida por outra feature, registre isso na spec e no PR.
-10. **Mensagens e rótulos literais:** as mensagens de R07/R10, os rótulos de status e o contrato da API de parceiros são copiados exatamente como estão em `docs/brief.md`.
+10. **Schema:** o schema completo nasce em F01. As features seguintes não criam migrações; se uma for indispensável, use prefixo de timestamp (`migrations/20261125T1530_<nome>.sql`) para não colidir em waves paralelas.
+11. **Mensagens e rótulos literais:** as mensagens de R07/R10, os rótulos de status e o contrato da API de parceiros são copiados exatamente como estão em `docs/brief.md`.
 
 ## Mapa dos artefatos
 
