@@ -299,3 +299,26 @@ Rota `POST /org/events/:id/cancel` → 303 para `/org/events/:id`. `_cancel.ejs`
 - O `plan.md` tem etapas numeradas e pequenas (cada uma vale um commit), cada etapa com o teste que a acompanha.
 - A etapa 1 é sempre um esqueleto pequeno, commitado e enviado logo no início, para comprovar o paralelismo nas waves paralelas.
 - A última etapa roda os itens do contrato como fumaça, roda `npm run gates`, atualiza `state/project-state.json` (só a própria feature) e abre o PR.
+
+## 8. Complementos decididos na Fase 2 (consolidação das specs)
+
+As specs foram escritas em paralelo e levantaram as questões abaixo. Estas decisões valem para todas as features e prevalecem sobre qualquer divergência.
+
+| # | Tema | Decisão |
+|---|---|---|
+| 1 | Testes nomeados | `npm run gates -- <arquivo> -t "<nome>" --reporter=verbose` roda só o vitest selecionado no compose isolado de gates (F01). Os nomes de teste começam com o ID do item de contrato (`C-Fxx-nn …`). O wrapper `vt` dos contratos de F07/F08 é equivalente. |
+| 2 | Banco dos gates | O serviço se chama `testdb` em `compose.gates.yaml`, com projeto `${COMPOSE_PROJECT_NAME:-catraca}-gates`, e nunca toca no banco do produto. |
+| 3 | Placeholder `GET /` | `buildApp` só registra o `home.ejs` placeholder se nenhuma feature registrar `GET /`. F04 registra `/` no próprio plugin e não edita `server.ts` nem `home.ejs`. |
+| 4 | Guard global `/org` | F02 aplica `requireOrganizer` a `/org` e `/org/*` com um hook global e cria `GET /org` → 302 `/org/events`. F04 não registra `GET /org`. |
+| 5 | Status HTTP | Validação de formulário → **422**, com o formulário re-renderizado. Conflito de estado (editar/publicar evento cancelado, cancelar evento não publicado) → **409**, sem alterar nada. Evento de outro dono / inexistente → **404** `error.ejs`. A criação de evento responde **303** com `Location: /org/events/evt_…`, e as ações bem-sucedidas (editar, publicar, cancelar) respondem **303** para `/org/events/:id`. |
+| 6 | Seções da página de gestão | `registerManageSection(name, fn)`: o objeto retornado por `fn` é **mesclado de forma rasa** nos locals (`fn` retorna `{ panel }` → `locals.panel`). Os partials recebem os `locals` completos da página. |
+| 7 | Funções adicionais de F04 | `listOwnedEvents`, `createOwnedEvent`, `updateOwnedEvent`, `publishOwnedEvent`, `EventInput`, `renderEventPage(reply, event, extra?, statusCode?)`, `eventsPublicRoutes`, `eventsOrgRoutes` (conforme a spec de F04). |
+| 8 | Funções adicionais de F05 | `TicketRow` (exportado de `src/purchases/service.ts`), `findTicketByCode(code)`. "Meus ingressos" acrescenta `data-ticket-id`. `GET /events/:id/purchase` → redirect para `/events/:id`. |
+| 9 | Script de F03 | `src/gateway/enqueue-demo.ts` (→ `dist/gateway/enqueue-demo.js`), usado só na avaliação de F03 (XC-F03-F01-01). |
+| 10 | Dispatcher | Iniciado em `buildApp` no hook `onReady` (se `startDispatcher !== false`) e parado no `preClose`. `kick()` com o dispatcher parado não faz nada. |
+| 11 | Roteador | F01 configura `routerOptions.maxParamLength = 500` no Fastify e um `frameworkErrors` que, para caminhos `/api/partner/*`, responde `422 {"error":"invalid_request"}` em vez do 400 padrão (URL malformada). |
+| 12 | Content-Type da API | O parser de F06 aceita qualquer Content-Type (nunca 415). O handler de compra exige `application/json` (com charset opcional); fora disso → 422. |
+| 13 | Ordem de locks | Sempre o **evento primeiro**, depois o ticket: compra/edição/cancelamento usam `FOR UPDATE` no evento; `applyGatewayResult` e `checkIn` usam `FOR SHARE` no evento e depois `FOR UPDATE` no ticket. |
+| 14 | Defaults dos helpers | `createEvent` default: `status='published'`, `capacity=10`, `priceCents=10000`, `startsAt` = agora + 30 dias. `insertTicket` default: `status='pending'`, `channel='web'`, `priceCents` = preço do evento. |
+| 15 | Dependências npm | Todas entram no `package.json` de F01. Nas waves paralelas, F02/F03 e F06/F07 não alteram `package.json`. |
+| 16 | Lint | O ESLint cobre `src/` e `test/`. `scripts/*.mjs` é verificado com `node --check` dentro dos gates. |

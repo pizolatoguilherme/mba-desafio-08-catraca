@@ -28,7 +28,7 @@ const prd = read('docs/PRD.md');
 const features = [...prd.matchAll(/^\|\s*(F\d{2})\s*\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|/gm)]
   .map((m) => ({ id: m[1], name: m[2].trim(), provides: m[3].trim(), consumes: m[4].trim() }))
   .filter((f, i, arr) => arr.findIndex((x) => x.id === f.id) === i);
-const mermaid = (prd.match(/```mermaid([\s\S]*?)```/) || [, ''])[1];
+const mermaid = prd.match(/```mermaid([\s\S]*?)```/)?.[1] ?? '';
 const edges = [...mermaid.matchAll(/(F\d{2})\s*-->\s*(F\d{2})/g)].map((m) => ({ provider: m[1], consumer: m[2] }));
 const acIds = [...new Set([...prd.matchAll(/\*\*(AC-F\d{2}-\d{2})\*\*/g)].map((m) => m[1]))];
 const xcIds = [...new Set([...prd.matchAll(/\*\*(XC-F\d{2}-F\d{2}-\d{2})\*\*/g)].map((m) => m[1]))];
@@ -74,7 +74,7 @@ if (want('--specs')) {
     check(/pr[ée]-requisitos/i.test(c), `${id}: contrato tem pré-requisitos de ambiente`);
     const items = [...new Set([...c.matchAll(/\b(C-F\d{2}-\d{2})\b/g)].map((m) => m[1]))];
     check(items.length > 0, `${id}: contrato tem itens verificáveis (${items.length})`);
-    const mapSection = (c.split(/^##\s.*Mapeamento.*$/im)[1] || '');
+    const mapSection = c.split(/^##\s.*Mapeamento.*$/im)[1] ?? '';
     check(mapSection.length > 0, `${id}: contrato tem seção de mapeamento`);
     for (const ac of acIds.filter((a) => a.startsWith(`AC-${id}-`))) {
       const line = mapSection.split('\n').find((l) => l.includes(ac));
@@ -83,7 +83,7 @@ if (want('--specs')) {
   }
   for (const xc of xcIds) {
     const covered = Object.entries(contracts).filter(([, c]) => {
-      const mapSection = (c.split(/^##\s.*Mapeamento.*$/im)[1] || '');
+      const mapSection = c.split(/^##\s.*Mapeamento.*$/im)[1] ?? '';
       const line = mapSection.split('\n').find((l) => l.includes(xc));
       return line && /C-F\d{2}-\d{2}/.test(line.replace(xc, ''));
     }).map(([id]) => id);

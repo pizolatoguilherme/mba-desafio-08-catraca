@@ -109,8 +109,8 @@ Formato: `AC-Fxx-nn [regras]`. Cada critério é verificável por comando, requi
 - **AC-F01-06** O schema impõe as invariantes: `events.capacity >= 1`, `events.price_cents > 0`, `tickets.code` único, `tickets.status` ∈ {pending, confirmed, declined, cancelled, refunded}, `events.status` ∈ {draft, published, cancelled}, `tickets.price_cents` gravado por ingresso.
 - **AC-F01-07** `AGENTS.md` na raiz contém os comandos de subir, derrubar e gates, as regras do projeto e o mapa dos artefatos; `CLAUDE.md` aponta para ele.
 - **AC-F01-08** `CATRACA_PORT` e `COMPOSE_PROJECT_NAME` permitem dois ambientes simultâneos (duas worktrees) sem conflito de porta ou de container.
-- **AC-F01-09** O `README.md` tem as seções do Entregável: Como rodar (pré-requisitos, up/down/gates), Endereços (`$WEB`, `$API`), Credenciais (org A, org B, participante da seed e chave de parceiro), Mapa dos artefatos (PRD, pastas das features, estado, AGENTS.md, links dos PRs das waves paralelas) e Decisões (stack, R07, gateway assíncrono, isolamento da avaliação). As credenciais do README funcionam no produto subido.
-- **AC-F01-10** `state/project-state.json` lista todas as features com status e caminho do relatório mais recente, e todos os caminhos existem.
+- **AC-F01-09** O `README.md` tem as seções do Entregável: Como rodar (pré-requisitos, up/down/gates), Endereços (`$WEB`, `$API`), Credenciais (org A, org B, participante da seed e chave de parceiro), Mapa dos artefatos (PRD, pastas das features, estado, AGENTS.md e um lugar para os links dos PRs das waves paralelas) e Decisões. As credenciais e os endereços do README funcionam no produto subido. Os links dos PRs e o texto final das Decisões são preenchidos à medida que as waves são integradas; a completude final é conferida na validação final por `npm run verify:delivery`.
+- **AC-F01-10** `state/project-state.json` é JSON válido, lista todas as features (F01–F08) com `status` dentro da legenda e `latestReport` (nulo ou caminho existente). A situação final (todas `done`, com o relatório mais recente) é conferida na validação final por `npm run verify:delivery`.
 
 ### F02 — Contas & Acesso
 
