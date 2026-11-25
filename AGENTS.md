@@ -41,6 +41,7 @@ Variáveis úteis (todas têm default; nenhuma é obrigatória):
 |---|---|
 | Enunciado / brief (fonte de verdade) | [`docs/brief.md`](docs/brief.md) |
 | PRD (features, provê/consome, grafo, waves, critérios) | [`docs/PRD.md`](docs/PRD.md) |
+| Arquitetura compartilhada (schema, interfaces, rotas) | [`docs/architecture.md`](docs/architecture.md) |
 | Spec, plano, contrato e relatórios de cada feature | `docs/features/Fxx-slug/{spec.md,plan.md,contract.md,reports/}` |
 | Estado do projeto | [`state/project-state.json`](state/project-state.json) |
 | Prompts dos agentes | [`prompts/implementer.md`](prompts/implementer.md), [`prompts/evaluator.md`](prompts/evaluator.md), [`prompts/fixer.md`](prompts/fixer.md) |
