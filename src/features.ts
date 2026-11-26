@@ -1,5 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { authPlugin } from './auth/plugin.js';
+import { eventsOrgRoutes } from './events/routes-org.js';
+import { eventsPublicRoutes } from './events/routes-public.js';
 
 /**
  * Plugins das features, registrados por buildApp em ordem, depois do core.
@@ -7,4 +9,5 @@ import { authPlugin } from './auth/plugin.js';
  */
 export const featurePlugins: FastifyPluginAsync[] = [
   authPlugin,
+  /* F04 */ eventsPublicRoutes, eventsOrgRoutes,
 ];

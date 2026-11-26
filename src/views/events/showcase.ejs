@@ -1,0 +1,18 @@
+<section data-page="showcase">
+  <h1>Eventos à venda</h1>
+<% if (events.length === 0) { -%>
+  <p data-empty>Nenhum evento à venda no momento.</p>
+<% } else { -%>
+  <ul data-list="showcase">
+<% for (const e of events) { -%>
+    <li data-event-id="<%= e.id %>">
+      <a href="/events/<%= e.id %>" data-field="name"><%= e.name %></a>
+      <span data-field="startsAt"><%= formatEventDateTime(e.starts_at) %></span>
+      <span data-field="venue"><%= e.venue %></span>
+      <span data-field="price"><%= formatBRL(e.price_cents) %></span>
+      <span data-field="available"><%= e.available %></span>
+    </li>
+<% } -%>
+  </ul>
+<% } -%>
+</section>

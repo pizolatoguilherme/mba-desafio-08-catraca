@@ -1,0 +1,8 @@
+<section data-page="org-new">
+  <h1>Novo evento</h1>
+  <form method="post" action="/org/events/new" data-form="create" novalidate>
+<%- include('_fields', { values, errors }) %>
+    <p><button type="submit">Criar evento</button></p>
+  </form>
+  <p><a href="/org/events">Meus eventos</a></p>
+</section>

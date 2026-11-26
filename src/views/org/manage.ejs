@@ -1,0 +1,41 @@
+<section data-event-id="<%= event.id %>">
+  <h1 data-field="name"><%= event.name %></h1>
+<% if (flashError) { -%>
+  <p data-flash="error"><%= flashError %></p>
+<% } -%>
+  <dl>
+    <dt>Id</dt>
+    <dd><code data-field="id"><%= event.id %></code></dd>
+    <dt>Status</dt>
+    <dd><span data-field="status" data-event-status="<%= event.status %>"><%= statusLabel %></span></dd>
+    <dt>Data e hora</dt>
+    <dd data-field="startsAt"><%= startsAtLabel %></dd>
+    <dt>Local</dt>
+    <dd data-field="venue"><%= event.venue %></dd>
+    <dt>Preço</dt>
+    <dd data-field="price"><%= priceLabel %></dd>
+  </dl>
+  <h2>Vagas</h2>
+  <dl data-seats>
+    <dt>Lotação</dt>
+    <dd data-seat="capacity"><%= seats.capacity %></dd>
+    <dt>Ocupadas</dt>
+    <dd data-seat="occupied"><%= seats.occupied %></dd>
+    <dt>Disponíveis</dt>
+    <dd data-seat="available"><%= seats.available %></dd>
+  </dl>
+<% if (canPublish) { -%>
+  <form method="post" action="/org/events/<%= event.id %>/publish" data-form="publish"><button type="submit">Publicar</button></form>
+<% } -%>
+<% if (canEdit) { -%>
+  <h2>Editar evento</h2>
+  <form method="post" action="/org/events/<%= event.id %>" data-form="edit" novalidate>
+<%- include('_fields', { values, errors }) %>
+    <p><button type="submit">Salvar alterações</button></p>
+  </form>
+<% } -%>
+  <section data-slot="panel"><%- include('../checkin/_panel', locals) %></section>
+  <section data-slot="checkin"><%- include('../checkin/_checkin', locals) %></section>
+  <section data-slot="cancel"><%- include('../cancel/_cancel', locals) %></section>
+  <p><a href="/org/events">Meus eventos</a></p>
+</section>

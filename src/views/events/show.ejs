@@ -1,0 +1,15 @@
+<article data-event-id="<%= event.id %>">
+  <h1 data-field="name"><%= event.name %></h1>
+  <dl>
+    <dt>Data e hora</dt>
+    <dd data-field="startsAt"><%= formatEventDateTime(event.starts_at) %></dd>
+    <dt>Local</dt>
+    <dd data-field="venue"><%= event.venue %></dd>
+    <dt>Preço</dt>
+    <dd data-field="price"><%= formatBRL(event.price_cents) %></dd>
+    <dt>Vagas disponíveis</dt>
+    <dd data-field="available"><%= seats.available %></dd>
+  </dl>
+  <section data-slot="buy"><%- include('../purchases/_buy', locals) %></section>
+  <p><a href="/">Voltar à vitrine</a></p>
+</article>

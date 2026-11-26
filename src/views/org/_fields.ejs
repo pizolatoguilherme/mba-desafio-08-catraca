@@ -1,0 +1,36 @@
+<%# Campos do formulário de evento (criação e edição). Locals: values, errors. -%>
+    <div class="field">
+      <label for="f-name">Nome</label><br>
+      <input name="name" value="<%= values.name %>" id="f-name" type="text">
+<% if (errors.name) { -%>
+      <p class="field-error" data-error="name"><%= errors.name %></p>
+<% } -%>
+    </div>
+    <div class="field">
+      <label for="f-venue">Local</label><br>
+      <input name="venue" value="<%= values.venue %>" id="f-venue" type="text">
+<% if (errors.venue) { -%>
+      <p class="field-error" data-error="venue"><%= errors.venue %></p>
+<% } -%>
+    </div>
+    <div class="field">
+      <label for="f-startsAt">Data e hora de início</label><br>
+      <input name="startsAt" value="<%= values.startsAt %>" id="f-startsAt" type="datetime-local">
+<% if (errors.startsAt) { -%>
+      <p class="field-error" data-error="startsAt"><%= errors.startsAt %></p>
+<% } -%>
+    </div>
+    <div class="field">
+      <label for="f-capacity">Lotação</label><br>
+      <input name="capacity" value="<%= values.capacity %>" id="f-capacity" inputmode="numeric">
+<% if (errors.capacity) { -%>
+      <p class="field-error" data-error="capacity"><%= errors.capacity %></p>
+<% } -%>
+    </div>
+    <div class="field">
+      <label for="f-price">Preço (R$)</label><br>
+      <input name="price" value="<%= values.price %>" id="f-price" inputmode="decimal" placeholder="100,00">
+<% if (errors.price) { -%>
+      <p class="field-error" data-error="price"><%= errors.price %></p>
+<% } -%>
+    </div>
