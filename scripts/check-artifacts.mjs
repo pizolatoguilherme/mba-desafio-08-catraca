@@ -136,6 +136,22 @@ if (want('--readme')) {
   check(/npm run up/.test(agents) && /npm run down/.test(agents) && /npm run gates/.test(agents), 'AGENTS.md tem up/down/gates');
   check(/Mapa dos artefatos/i.test(agents), 'AGENTS.md tem mapa dos artefatos');
   check(/AGENTS\.md/.test(read('CLAUDE.md')), 'CLAUDE.md aponta para AGENTS.md');
+
+  // PRs das waves paralelas: linhas "| Wn | ... | [#N](.../pull/N) |" do README, agrupadas por wave.
+  const waves = {};
+  for (const m of readme.matchAll(/^\|\s*(W\d)\s*\|[^\n]*?\/pull\/(\d+)\)/gm)) (waves[m[1]] ??= []).push(m[2]);
+  const parallel = Object.entries(waves).filter(([, prs]) => prs.length >= 2);
+  check(parallel.length >= 1, `README lista PRs de ≥1 wave paralela (${parallel.map(([w, p]) => `${w}: #${p.join(' #')}`).join('; ') || 'nenhuma'})`);
+  for (const [w, prs] of parallel) {
+    let out = '';
+    let okPar = false;
+    try {
+      out = execFileSync('sh', [join(ROOT, 'scripts/check-parallel.sh'), ...prs], { cwd: ROOT, encoding: 'utf8' });
+      okPar = true;
+    } catch (e) { out = `${e.stdout ?? ''}${e.message}`; }
+    check(okPar, `${w}: commits dos PRs #${prs.join(', #')} se sobrepõem (check-parallel.sh)`);
+    if (!okPar) console.log(out.split('\n').map((l) => `      ${l}`).join('\n'));
+  }
 }
 
 console.log(failures === 0 ? '\nOK: todas as verificações passaram.' : `\nFALHOU: ${failures} verificação(ões).`);
