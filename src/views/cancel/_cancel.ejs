@@ -1,1 +1,10 @@
-<%# F08: cancelamento %>
+<%# F08: cancelamento (R11). published -> botão; cancelled -> aviso; draft -> nada. Opcional: locals.cancelError. %>
+<% if (locals.cancelError) { -%>
+  <p data-cancel-error><%= locals.cancelError %></p>
+<% } -%>
+<% if (locals.event && locals.event.status === 'published') { -%>
+  <h2>Cancelamento</h2>
+  <form method="post" action="/org/events/<%= locals.event.id %>/cancel" data-cancel-form><button type="submit">Cancelar evento</button></form>
+<% } else if (locals.event && locals.event.status === 'cancelled') { -%>
+  <p data-event-cancelled>Evento cancelado</p>
+<% } -%>
