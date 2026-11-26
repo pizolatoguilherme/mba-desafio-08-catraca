@@ -60,6 +60,16 @@ describe('F06 robustez aos defaults do framework', () => {
     expect(await ticketCount()).toBe(0);
     // charset é aceito no media type.
     const ok = await apiBuy(app, open, OK, { contentType: 'Application/JSON; charset=utf-8' });
-    expect(ok.statusCode).not.toBe(422);
+    expect(ok.statusCode).toBe(202);
+  });
+
+  it('C-F06-06 ids em formato inesperado respondem 404 com o erro da rota', async () => {
+    const odd = ['evt_%00', '%27%20OR%201%3D1--', 'x'.repeat(300), 'x'.repeat(500), 'EVT_ABCDEFGHIJ', 'evt_abc', 'evt_abcdefghij%20', '%20'];
+    for (const id of odd) {
+      const res = await apiBuy(app, id, OK);
+      expect([id, res.statusCode]).toEqual([id, 404]);
+      expectJson(res, 404, { error: 'event_not_available' });
+    }
+    expect(await ticketCount()).toBe(0);
   });
 });

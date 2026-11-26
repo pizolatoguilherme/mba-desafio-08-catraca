@@ -3,7 +3,7 @@ import type { FastifyError, FastifyPluginAsync, FastifyReply, FastifyRequest } f
 import { config } from '../config.js';
 import { type EventRow, listOnSaleEvents } from '../events/repo.js';
 import { toIsoWithOffset } from '../format.js';
-import { validatePurchaseInput } from '../purchases/service.js';
+import { purchaseTicket, validatePurchaseInput } from '../purchases/service.js';
 
 // API de parceiros (contrato fixo de docs/brief.md). Spec: docs/features/F06-api-parceiros/spec.md.
 
@@ -71,6 +71,9 @@ export function serializeEvent(e: EventRow & { available: number }): {
   };
 }
 
+// Formato de newId (architecture.md §5): fora dele, 404 sem tocar no banco.
+const EVENT_ID = /^evt_[a-z0-9]{10}$/;
+
 const TICKET_PATH = /^\/api\/partner\/tickets\/[^/]+\/?$/;
 const PURCHASE_PATH = /^\/api\/partner\/events\/[^/]+\/purchases\/?$/;
 
@@ -117,10 +120,24 @@ export const partnerRoutes: FastifyPluginAsync = async (app) => {
     const events = await listOnSaleEvents();
     return reply.code(200).send(events.map(serializeEvent));
   });
-  app.post('/events/:eventId/purchases', async (req, reply) => {
+  // Ordem de erros: chave (401, no onRequest) -> corpo (422) -> evento (404) -> vaga (409).
+  // R07 sob concorrência é garantido pelo lock FOR UPDATE do evento dentro de purchaseTicket.
+  app.post<{ Params: { eventId: string } }>('/events/:eventId/purchases', async (req, reply) => {
     const body = parsePurchaseBody(req);
     if (!body.ok) return invalidRequest(reply);
-    return reply.code(501).send({ error: 'not_implemented' });
+    const { eventId } = req.params;
+    if (!EVENT_ID.test(eventId)) return reply.code(404).send({ error: 'event_not_available' });
+    const r = await purchaseTicket({
+      eventId,
+      channel: 'partner',
+      userId: null,
+      buyerEmail: body.buyerEmail,
+      cardNumber: body.cardNumber,
+    });
+    if (r.ok) return reply.code(202).send({ ticketId: r.ticket.id, code: r.ticket.code, status: 'pending' });
+    if (r.error === 'event_not_available') return reply.code(404).send({ error: 'event_not_available' });
+    if (r.error === 'sold_out') return reply.code(409).send({ error: 'sold_out' });
+    return invalidRequest(reply);
   });
   app.get('/tickets/:ticketId', async (_req, reply) => reply.code(501).send({ error: 'not_implemented' }));
 };
