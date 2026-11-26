@@ -11,8 +11,8 @@ interface Rule {
 }
 
 // Tabela do gateway simulado (docs/brief.md), em escala 1.
-// 2–4 s fica dentro dos 2–5 s do brief e, somado à latência do dispatcher, garante < 5 s para o 0001.
-const FAST = { minMs: 2000, maxMs: 4000 } as const;
+// 2–3 s fica dentro dos 2–5 s do brief e, somado à latência do dispatcher, garante < 5 s para o 0001 com folga.
+const FAST = { minMs: 2000, maxMs: 3000 } as const;
 const SLOW = { minMs: 30000, maxMs: 40000 } as const;
 
 const RULES: Record<string, Rule> = {

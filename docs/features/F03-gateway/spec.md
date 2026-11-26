@@ -33,11 +33,11 @@ Fora (pertence a outras features):
 
 | # | Decisão | Por quê |
 |---|---|---|
-| D1 | Atrasos em escala 1: finais `0001`, `0002` e "outro" em **2000–4000 ms**; `0003` e `0004` em **30000–40000 ms**. Fórmula: `delayMs = min + Math.round(rnd() * (max - min))`, com `rnd` default `Math.random`. | PRD §1 e AC-F03-01: 2–4 s (dentro dos 2–5 s do brief) somados à latência do dispatcher (≤ 300 ms) garantem `confirmed` em < 5 s para o `0001`. `Math.round` torna os extremos determinísticos (`rnd=()=>0` → `min`; `rnd=()=>0.9999999` → `max`). |
+| D1 | Atrasos em escala 1: finais `0001`, `0002` e "outro" em **2000–3000 ms**; `0003` e `0004` em **30000–40000 ms**. Fórmula: `delayMs = min + Math.round(rnd() * (max - min))`, com `rnd` default `Math.random`. | PRD §1 e AC-F03-01: 2–3 s (dentro dos 2–4 s do AC-F03-01 e dos 2–5 s do brief) somados à latência do dispatcher (≤ 300 ms) garantem `confirmed` em < 5 s para o `0001`. `Math.round` torna os extremos determinísticos (`rnd=()=>0` → `min`; `rnd=()=>0.9999999` → `max`). |
 | D2 | `SimulatedGateway.authorize` espera `Math.round(delayMs * scale)` ms com `setTimeout(...).unref()`. `scale` precisa ser finito e ≥ 0 (senão `RangeError`). | A escala vale para todos os finais (AC-F03-06). `unref()` evita que timers de 30–40 s segurem o processo de teste ou do script depois do fim. |
 | D3 | `enqueuePayment(c, ticketId, cardLast4)` só faz `INSERT INTO payments (ticket_id, card_last4)` com o `Db` recebido; **não** chama o gateway nem `kick()`. Rejeita (`TypeError`) `cardLast4` que não seja `^\d{4}$`. | Fica na transação do chamador (F05 grava ticket + pagamento atomicamente; rollback desfaz os dois). O `kick()` só pode acontecer **depois** do commit, então é responsabilidade do chamador. Rejeitar algo diferente de 4 dígitos impede que um número de cartão completo seja gravado por engano. |
 | D4 | Coleta: `UPDATE payments SET state='in_flight', started_at=now() WHERE id IN (SELECT id FROM payments WHERE state='requested' ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 100) RETURNING id, ticket_id, card_last4`. Se voltarem 100 linhas, outra coleta roda imediatamente. | Texto de `architecture.md` §5. `SKIP LOCKED` evita dupla coleta; o lote de 100 com re-coleta imediata evita fila acumulada. |
-| D5 | Para **cada** linha coletada, dispara sem `await` em série: `gateway.authorize(last4).then(r => applyGatewayResult(ticketId, r))`. | Concorrência exigida por AC-F03-08: 5 pagamentos de 2–4 s precisam terminar em ≤ 5 s, o que é impossível em série. |
+| D5 | Para **cada** linha coletada, dispara sem `await` em série: `gateway.authorize(last4).then(r => applyGatewayResult(ticketId, r))`. | Concorrência exigida por AC-F03-08: 5 pagamentos de 2–3 s precisam terminar em ≤ 5 s, o que é impossível em série. |
 | D6 | Laço com `setTimeout` encadeado a cada `pollMs` (default `config.gatewayPollMs = 250`), nunca `setInterval`. `kick()` antecipa a próxima coleta; kicks durante uma coleta em andamento são coalescidos em **uma** coleta extra logo depois. | Sem sobreposição de coletas. O polling é a rede de segurança: um INSERT feito por outro processo (script, psql) é coletado em ≤ `pollMs`. |
 | D7 | `applyGatewayResult(ticketId, result)` em `withTransaction`: (1) `SELECT e.status FROM tickets t JOIN events e ON e.id = t.event_id WHERE t.id = $1 FOR SHARE OF e`; (2) se o evento **não** está `cancelled`: `UPDATE tickets SET status = $novo, updated_at = now() WHERE id = $1 AND status = 'pending'`; (3) `UPDATE payments SET state='done', result=$r, completed_at=now() WHERE ticket_id=$1`. Retorna `true` só se o ticket foi alterado. `approved → confirmed`, `declined → declined`. | R08 + R11 (AC-F03-05). O cancelamento (F08) trava o evento com `FOR UPDATE`, que conflita com `FOR SHARE`: as duas operações são serializadas. Se o cancelamento vence, o evento já está `cancelled` e nada é confirmado; se a aplicação vence, o ticket vira `confirmed` e o cancelamento o transforma em `refunded`. Ordem de lock evento → ticket, igual à de compra e cancelamento: sem deadlock. O pagamento termina `done` mesmo quando a guarda recusa, para não ser reprocessado. |
 | D8 | `start()`: marca o dispatcher como ativo e a **primeira** coleta é precedida de `UPDATE payments SET state='requested', started_at=NULL WHERE state='in_flight'`. | Há uma única instância de app (architecture §5): todo `in_flight` encontrado no arranque é de um processo que morreu. Ele volta para a fila e é reautorizado (AC-F03-07). |
@@ -77,11 +77,11 @@ export const dispatcher: Dispatcher;   // singleton: createDispatcher({ gateway:
 
 | `cardLast4` | `result` | `delayMs` com `rnd=()=>0` | `rnd=()=>0.5` | `rnd=()=>0.9999999` |
 |---|---|---|---|---|
-| `0001` | `approved` | 2000 | 3000 | 4000 |
-| `0002` | `declined` | 2000 | 3000 | 4000 |
+| `0001` | `approved` | 2000 | 2500 | 3000 |
+| `0002` | `declined` | 2000 | 2500 | 3000 |
 | `0003` | `approved` | 30000 | 35000 | 40000 |
 | `0004` | `declined` | 30000 | 35000 | 40000 |
-| qualquer outro (`0000`, `0005`, `1234`, `9999`, `''`, `abcd`) | `declined` | 2000 | 3000 | 4000 |
+| qualquer outro (`0000`, `0005`, `1234`, `9999`, `''`, `abcd`) | `declined` | 2000 | 2500 | 3000 |
 
 `decide` não aplica escala; quem aplica é `SimulatedGateway`.
 
@@ -211,3 +211,9 @@ Não altera: `src/features.ts`, `test/helpers.ts`, `migrations/`, views, `compos
 6. **PRD §2 × architecture.** O PRD §2 escreve `enqueuePayment(client, ticketId, card)`, e a architecture escreve `enqueuePayment(c, ticketId, cardLast4)`. Vale a architecture: o chamador (F05) passa `cardLast4(cardNumber)`, e um valor que não tenha 4 dígitos lança `TypeError` (D3).
 7. **Reautorização depois de restart.** Um pagamento abandonado (D9) ou recuperado (D8) é autorizado de novo, com um novo atraso (ex.: `0003` leva mais 30–40 s a partir do restart). Isso é aceitável no modo simulado. Um gateway real exigiria idempotência, que está fora de escopo.
 8. **Resíduo do script.** Cada execução do `enqueue-demo` cria um evento `draft` do organizador A no banco do ambiente em que roda, e ele aparece em `/org/events` do organizador A (depois de F04). Use o script só no ambiente de avaliação de F03 (`COMPOSE_PROJECT_NAME=catraca-f03`), nunca no ambiente do Fluxo do avaliador.
+
+## Ajuste pós-entrega
+
+- **Faixa rápida 2000–3000 ms (antes 2000–4000 ms).** O enunciado exige `confirmed` "em até 5 segundos" com o cartão final `0001` (passos 5 e 8 do Fluxo do avaliador). Com a faixa de 2–4 s, o pior caso medido na validação final foi 4,44 s, folga pequena para uma máquina mais lenta. A nova faixa continua dentro dos "entre 2 e 5 segundos" do brief e dos 2–4 s do AC-F03-01. A faixa lenta (`0003`/`0004`) segue 30000–40000 ms.
+- Mudam `src/gateway/simulated.ts` (`FAST`), a tabela da §4.1 e o teste "decide aplica a tabela de finais com rnd nos extremos" (2000 / 2500 / 3000 ms), conforme a emenda do C-F03-02 no contrato. Os nomes dos testes e os limites folgados (≤ 4100 ms, ≤ 4300 ms, ≤ 5000 ms) ficam como estavam.
+- **Efeito no C-F03-04.** Com `scale: 0.01` e `rnd=()=>0.5`, os finais rápidos passam de 30 ms para 25 ms. O teste "a escala multiplica os atrasos de todos os finais" passa a aceitar 23–90 ms para `0001`/`0002`/`0009` (mesma tolerância de −2 ms de antes). O contrato ainda diz 28–90 ms nesse item e precisa ser emendado pelo orquestrador.

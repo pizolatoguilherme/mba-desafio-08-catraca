@@ -53,7 +53,7 @@ describe('F03 latência e concorrência', () => {
           expect(Number(row.pickup_ms), `rodada ${round}: coleta`).toBeLessThanOrEqual(300);
         }
 
-        // Em série, 5 × 2–4 s levariam ≥ 10 s: a janela de processamento prova a concorrência.
+        // Em série, 5 × 2–3 s levariam ≥ 10 s: a janela de processamento prova a concorrência.
         const w = await query<{ window_ms: number }>(
           `SELECT extract(epoch FROM max(completed_at) - min(started_at)) * 1000 AS window_ms
              FROM payments WHERE ticket_id = ANY($1)`,
