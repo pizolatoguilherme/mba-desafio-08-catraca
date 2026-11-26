@@ -1,0 +1,11 @@
+<section data-page="login">
+  <h1>Entrar</h1>
+  <% if (error) { %><p data-form-error><%= error %></p><% } %>
+  <form method="post" action="/login">
+    <p><label>E-mail<br><input name="email" type="email" value="<%= form.email %>" autocomplete="email" required></label></p>
+    <p><label>Senha<br><input name="password" type="password" autocomplete="current-password" required></label></p>
+    <input type="hidden" name="next" value="<%= next %>">
+    <p><button type="submit">Entrar</button></p>
+  </form>
+  <p>Ainda não tem conta? <a href="/signup<%= next !== '/' ? '?next=' + encodeURIComponent(next) : '' %>">Criar conta</a></p>
+</section>
