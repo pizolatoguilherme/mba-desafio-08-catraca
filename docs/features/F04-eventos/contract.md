@@ -341,7 +341,8 @@ login A org.a@catraca.dev; login B org.b@catraca.dev; login P participante@catra
 - **Esperado:**
   - só aparecem arquivos de `src/events/`, `src/views/events/`, `src/views/org/`, os 4 partials (`src/views/purchases/_buy.ejs`, `src/views/checkin/_panel.ejs`, `src/views/checkin/_checkin.ejs`, `src/views/cancel/_cancel.ejs`), `test/f04/`, `src/features.ts`, `state/project-state.json` e, opcionalmente, `docs/features/F04-eventos/` (sem `reports/`). **Não** aparecem `src/server.ts`, `src/views/home.ejs`, `src/auth/`, `src/gateway/`, `test/helpers.ts` nem `migrations/`;
   - `git diff main...HEAD -- src/features.ts` acrescenta só o import e a linha `/* F04 */ eventsPublicRoutes, eventsOrgRoutes,`;
-  - em `state/project-state.json`, só a entrada `F04` mudou, com `"status": "implemented"`.
+  - em `state/project-state.json`, só a entrada `F04` mudou, com `"status": "implemented"`;
+  - **exceção admitida (emenda do orquestrador, antes da avaliação):** `test/f02/guards.test.ts` pode aparecer, desde que `git diff main...HEAD -- test/f02/guards.test.ts` troque **apenas** a URL de exemplo de rota `/org/*` inexistente (`/org/events` → outra rota inexistente, ex.: `/org/rota-inexistente`), mantendo a expectativa `404`. Motivo: o teste de F02 usava `/org/events` como exemplo de rota que ainda não existia; a F04 passa a servir essa rota, de modo que o teste deixaria de ser válido. O desvio está registrado na spec da F04 (§12).
 
 ### C-F04-23 — Gates verdes (comando)
 - **Como:** `npm run gates; echo "exit=$?"` e depois `docker ps --filter "name=$COMPOSE_PROJECT_NAME-gates" -q | wc -l`.
