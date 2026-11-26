@@ -39,7 +39,7 @@ Status do evento: `draft` (rascunho), `published` (publicado), `cancelled` (canc
 - Fuso: `America/Sao_Paulo` (UTC−03:00). Datas da UI usam `datetime-local` interpretado nesse fuso; a API devolve ISO 8601 com offset `-03:00`.
 - Concorrência (R07/R03/R11): toda operação que lê ou altera vagas ou preço de um evento faz `SELECT … FOR UPDATE` na linha do evento (`lockEvent`), dentro de uma transação. Isso vale para compra, edição (lotação **e** preço), publicação e cancelamento. A compra lê o preço dentro do lock.
 - Gateway assíncrono: a compra grava o ticket `pending` + uma linha em `payments` e, depois do commit, aciona o dispatcher imediatamente (polling de 250 ms como rede de segurança). O dispatcher processa cada pagamento **concorrentemente** (uma promessa por pagamento) e aplica o resultado em uma transação que trava a linha do evento com `FOR SHARE`. O resultado só é aplicado se o ticket ainda estiver `pending` **e** o evento não estiver `cancelled`. Como o cancelamento segura `FOR UPDATE` no mesmo evento, as duas operações são serializadas.
-- Atrasos do gateway simulado (dentro das faixas do brief): finais 0001/0002/outros em **2–4 s**; 0003/0004 em **30–40 s**. Somados à latência do dispatcher (≤ 300 ms), garantem `confirmed` em < 5 s para o 0001.
+- Atrasos do gateway simulado (dentro das faixas do brief): finais 0001/0002/outros em **2–3 s** (até o ajuste pós-entrega do PR #14 eram 2–4 s); 0003/0004 em **30–40 s**. Somados à latência do dispatcher (≤ 300 ms), garantem `confirmed` em < 5 s para o 0001.
 - IDs: o id de evento é a string `evt_…`, a mesma na URL da página de gestão (`/org/events/evt_…`), na vitrine e na API. Ingressos usam `tkt_…`.
 - Schema completo em F01: as features seguintes não criam migrações nas waves paralelas. Quando uma migração for indispensável, ela usa prefixo de timestamp para não colidir.
 
@@ -123,7 +123,7 @@ Formato: `AC-Fxx-nn [regras]`. Cada critério é verificável por comando, requi
 
 ### F03 — Gateway simulado & Dispatcher
 
-- **AC-F03-01** [R08] Com `GATEWAY_DELAY_SCALE=1`, o `SimulatedGateway` responde conforme o final do cartão, dentro das faixas do brief: `0001` aprovado em 2–4 s; `0002` recusado em 2–4 s; `0003` aprovado em 30–40 s; `0004` recusado em 30–40 s; qualquer outro final recusado em 2–4 s.
+- **AC-F03-01** [R08] Com `GATEWAY_DELAY_SCALE=1`, o `SimulatedGateway` responde conforme o final do cartão, dentro das faixas do brief: `0001` aprovado em 2–3 s; `0002` recusado em 2–3 s; `0003` aprovado em 30–40 s; `0004` recusado em 30–40 s; qualquer outro final recusado em 2–3 s.
 - **AC-F03-02** `isValidCardNumber` aceita exatamente 16 dígitos (`^\d{16}$`) e rejeita qualquer outra entrada (`123`, 15 ou 17 dígitos, letras, vazio, `null`).
 - **AC-F03-03** [R08] Depois de `enqueuePayment`, o dispatcher aplica o resultado ao ticket: aprovado → `confirmed`, recusado → `declined`. O `payments` correspondente termina em `done` com o resultado.
 - **AC-F03-04** [R06] `enqueuePayment` só grava a linha de `payments` e retorna sem esperar o gateway (< 200 ms, mesmo para o cartão `0003`).
