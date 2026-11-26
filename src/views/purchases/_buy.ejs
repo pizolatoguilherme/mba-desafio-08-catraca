@@ -1,1 +1,18 @@
-<%# F05: formulário de compra %>
+<%# F05: compra na página do evento. Recebe { event, seats, user } e, opcionais, soldOut e purchaseError. -%>
+<% if (locals.purchaseError) { -%>
+<p data-purchase-error><%= locals.purchaseError %></p>
+<% } -%>
+<% if (seats.available === 0 || locals.soldOut) { -%>
+<p data-sold-out>Ingressos esgotados</p>
+<% } else if (seats.available > 0) { -%>
+<% if (!locals.user) { -%>
+<a data-buy-login href="/login?next=/events/<%= event.id %>">Entre para comprar</a>
+<% } else if (locals.user.role === 'participant') { -%>
+<form data-buy-form method="post" action="/events/<%= event.id %>/purchase">
+  <label>Número do cartão (16 dígitos) <input name="cardNumber" inputmode="numeric" autocomplete="cc-number" required></label>
+  <button type="submit">Comprar</button>
+</form>
+<% } else { -%>
+<p data-buy-organizer>Compras são feitas com uma conta de participante.</p>
+<% } -%>
+<% } -%>
