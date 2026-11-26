@@ -1,1 +1,12 @@
-<%# F07: check-in %>
+<%# F07: check-in (R10). O campo fica sempre visível na gestão, inclusive em evento cancelado (D4). Sem evento (sem id) não há formulário. %>
+<% if (locals.event && locals.event.id) { -%>
+  <h2>Check-in</h2>
+<% if (locals.checkinResult) { -%>
+  <p data-checkin-result="<%= locals.checkinResultKey %>"><%= locals.checkinResult %></p>
+<% } -%>
+  <form method="post" action="/org/events/<%= locals.event.id %>/checkin" data-form="checkin">
+    <label for="checkin-code">Código do ingresso</label>
+    <input id="checkin-code" name="code" type="text" autocomplete="off" autocapitalize="characters">
+    <button type="submit">Fazer check-in</button>
+  </form>
+<% } -%>
