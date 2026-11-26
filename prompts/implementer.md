@@ -15,6 +15,8 @@ Você é o **implementador** da feature `{{FEATURE_ID}}` da Catraca. Você não 
 
 ## Como trabalhar
 1. **Faça o primeiro commit em até 5 minutos** (ex.: esqueleto dos arquivos da etapa 1 do plano) e faça push (`git push -u origin {{BRANCH}}`). Isso é exigido para comprovar o paralelismo.
+   - **Todo push dispara o CI do PR e precisa ficar verde, inclusive o do esqueleto.** Antes de cada push rode ao menos lint + typecheck (`npm ci` uma vez na worktree, depois `npx eslint . && npx tsc --noEmit`); antes de marcar o PR como pronto rode `npm run gates`. Stubs não podem deixar parâmetros/variáveis sem uso (o lint reprova `_x` não usado): prefira um esqueleto mínimo (só a estrutura de arquivos/tipos ou um teste pendente com `it.todo`) que já passe no lint.
+   - Depois de cada push, confira o CI: `gh run list --branch {{BRANCH}} --limit 3`. Se um run falhar, corrija no próximo commit antes de seguir.
 2. Siga o `plan.md` etapa por etapa. Cada etapa vem com o seu teste automatizado. Faça um commit por etapa e push frequente.
 3. Implemente **exatamente** o que a spec define: interfaces providas com as assinaturas da spec, mensagens literais do brief. Não altere arquivos de outras features além do que a spec prevê.
 4. Antes de terminar, rode você mesmo cada item do `contract.md`, como teste de fumaça (isso **não** substitui a avaliação), e rode `npm run gates`, que precisa passar.
