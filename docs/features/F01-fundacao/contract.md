@@ -5,7 +5,7 @@
 
 ## Pré-requisitos de ambiente
 
-- Linux ou macOS com Docker Engine e **Docker Compose v2** (`docker compose version` ≥ 2.20), Git, Node.js 22 LTS, `curl` e shell `bash` para executar os comandos abaixo. `gh` autenticado só para C-F01-22.
+- Linux ou macOS com Docker Engine e **Docker Compose v2** (`docker compose version` ≥ 2.20), Git, Node.js LTS (≥ 20; o produto roda em `node:22-alpine` no container), `curl` e shell `bash` para executar os comandos abaixo. `gh` autenticado só para C-F01-22.
 - Nenhuma variável do produto exportada no shell: `unset GATEWAY_DELAY_SCALE PARTNER_API_KEY GATEWAY_POLL_MS DATABASE_URL`.
 - Variáveis da avaliação (ambiente isolado; os valores podem mudar, desde que sejam únicos na máquina):
 

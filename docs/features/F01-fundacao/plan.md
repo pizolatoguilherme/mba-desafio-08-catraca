@@ -7,7 +7,7 @@
 ## Etapa 1: esqueleto mínimo (commit e push imediatos)
 
 - **Arquivos:**
-  - `package.json`: `"name": "catraca"`, `"private": true`, `"type": "module"`, `engines.node >=22`, todos os scripts de spec §4.4 e as dependências de spec §2;
+  - `package.json`: `"name": "catraca"`, `"private": true`, `"type": "module"`, `engines.node >=20`, todos os scripts de spec §4.4 e as dependências de spec §2;
   - `package-lock.json` (gerado por `npm install`);
   - `tsconfig.json`, `tsconfig.build.json`, `eslint.config.js`, `vitest.config.ts` (ainda sem `globalSetup`), `.dockerignore` (`node_modules`, `dist`, `coverage`, `.git`, `.claude`);
   - `src/config.ts` (`Config`, `loadConfig`, `config`).
