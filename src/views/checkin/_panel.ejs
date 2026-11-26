@@ -1,1 +1,18 @@
-<%# F07: painel %>
+<%# F07: painel (R12). Cada data-metric contém só o valor, sem tags aninhadas. %>
+<% if (locals.panel) { -%>
+  <h2>Painel</h2>
+  <dl data-panel>
+    <dt>Confirmados</dt>
+    <dd data-metric="confirmed"><%= locals.panel.confirmed %></dd>
+    <dt>Pendentes</dt>
+    <dd data-metric="pending"><%= locals.panel.pending %></dd>
+    <dt>Check-ins</dt>
+    <dd data-metric="checkins"><%= locals.panel.checkins %></dd>
+    <dt>Vagas disponíveis</dt>
+    <dd data-metric="available"><%= locals.panel.available %></dd>
+    <dt>Receita</dt>
+    <dd data-metric="revenue"><%= locals.panel.revenue %></dd>
+    <dt>Estornados</dt>
+    <dd data-metric="refunded"><%= locals.panel.refunded %></dd>
+  </dl>
+<% } -%>

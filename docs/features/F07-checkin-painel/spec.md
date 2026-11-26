@@ -185,3 +185,12 @@ Itens de tempo real (escala 1, gateway de verdade do produto) são verificados c
 4. **`findTicketByCode`.** O PRD (tabela de features) diz que F05 provê `findTicketByCode`, mas o architecture.md §5 não o lista. F07 **não depende dele**: a busca por código precisa acontecer dentro da transação, com `FOR UPDATE` e filtro por `event_id`, então F07 faz a própria consulta.
 5. **Execução de teste nomeado.** O contrato usa `docker compose -f compose.gates.yaml run --rm gates npx vitest run …` (ver pré-requisitos). Se F01 tiver exposto outro atalho equivalente (ex.: argumento extra em `scripts/gates.sh`), ele vale igualmente. A evidência é a linha `✓` do teste.
 6. **Redirect da criação de evento (F04).** Os helpers `curl` do contrato extraem o id do evento do cabeçalho `Location` de `POST /org/events/new`, supondo que F04 redirecione para `/org/events/evt_…`. Se não redirecionar, o fallback é procurar o link `/org/events/evt_…` do nome único em `GET /org/events`.
+
+## 11. Notas de implementação (registradas pelo implementador)
+
+1. **Questões 1 e 2 (§10):** confirmadas na `main`. `buildManageLocals` mescla o retorno das seções de forma rasa (`locals.panel`) e `manage.ejs` inclui os partials com os `locals` completos da página. Nada de F04 foi alterado.
+2. **Partials e o teste C-F04-19 de F04:** `test/f04/manage.test.ts` renderiza os partials com `{ event: {}, seats: {}, user: null }` e espera saída vazia. Por isso `_panel.ejs` só renderiza com `locals.panel` presente, e `_checkin.ejs` só renderiza com `locals.event.id` presente (sem id de evento não há `action` possível). Na página de gestão real os dois sempre aparecem (inclusive em evento cancelado, D4). Nenhum teste de outra feature foi alterado.
+3. **`src/features.ts`:** além da linha `/* F07 */ checkinPlugin,` no array, entra a linha de `import` correspondente (indispensável para referenciar o plugin).
+4. **Campo `code` ausente ou não-string no POST:** tratado como string vazia, o que resulta em `Ingresso inválido para este evento` (D3), sem consultar o banco.
+5. **Formulário:** o `<input name="code">` não usa `required`, para que um envio vazio receba a mensagem de R10 do servidor.
+6. **Questão 5 (§10):** o atalho de F01 `npm run gates -- <arquivo> -t "<nome>" --reporter=verbose` (architecture §8 #1) é equivalente ao wrapper `vt`.
