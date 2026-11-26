@@ -44,11 +44,13 @@ vt() { npm run gates -- "$1" -t "$2" --reporter=verbose; }
 ### C-F03-02 — Tabela de `decide()` com `rnd` determinístico (vitest)
 - **Como:** `vt test/f03/simulated.test.ts "decide aplica a tabela de finais com rnd nos extremos"`.
 - **Esperado:** passa. O teste afirma, para `rnd = () => 0`, `() => 0.5` e `() => 0.9999999`, exatamente:
-  - `0001` → `approved`, com 2000 / 3000 / 4000 ms;
-  - `0002` → `declined`, com 2000 / 3000 / 4000 ms;
+  - `0001` → `approved`, com 2000 / 2500 / 3000 ms;
+  - `0002` → `declined`, com 2000 / 2500 / 3000 ms;
   - `0003` → `approved`, com 30000 / 35000 / 40000 ms;
   - `0004` → `declined`, com 30000 / 35000 / 40000 ms;
-  - `0000`, `0005`, `1234`, `9999` → `declined`, com 2000 / 3000 / 4000 ms.
+  - `0000`, `0005`, `1234`, `9999` → `declined`, com 2000 / 2500 / 3000 ms.
+
+- **Emenda do orquestrador (pós-entrega, antes da reavaliação):** a faixa rápida (finais `0001`, `0002` e "outro") passou de 2000–4000 ms para **2000–3000 ms**, para ampliar a folga do critério "confirmado em até 5 segundos" do enunciado (passos 5 e 8) em máquinas mais lentas. A faixa continua dentro dos 2–5 s do enunciado e dos 2–4 s do AC-F03-01; os demais itens (C-F03-03, C-F03-06, C-F03-13, C-F03-14, C-F03-18, C-F03-19) mantêm os limites originais, que a nova faixa satisfaz.
 
 ### C-F03-03 — `SimulatedGateway` em escala 1, medido (vitest)
 - **Como:** `vt test/f03/simulated.test.ts "SimulatedGateway em escala 1 responde 0001 e 0002 entre 2 e 4 s medidos"`.
