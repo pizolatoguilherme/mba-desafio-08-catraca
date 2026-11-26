@@ -92,18 +92,33 @@ Features (cada pasta tem `spec.md`, `plan.md`, `contract.md` e `reports/`):
 
 ### PRs das waves paralelas
 
-A preencher ao longo das waves (a prova de paralelismo é `scripts/check-parallel.sh <pr> <pr>`, que compara as datas dos commits dos PRs):
+Duas waves foram executadas em paralelo, cada feature por um agente implementador próprio, numa git worktree própria, com PR próprio. A prova é `scripts/check-parallel.sh <pr> <pr>`, que exige que o primeiro commit de cada PR seja anterior ao último commit do outro (datas `authoredDate` dos commits, em UTC):
 
-- W1: F02 — (link do PR, a preencher)
-- W1: F03 — (link do PR, a preencher)
-- W4: F06 — (link do PR, a preencher)
-- W4: F07 — (link do PR, a preencher)
+| Wave | Feature | PR | Primeiro commit | Último commit |
+|---|---|---|---|---|
+| W1 | F02 Contas & Acesso | [#2](https://github.com/pizolatoguilherme/mba-desafio-08-catraca/pull/2) | 2026-11-26T11:04:47Z | 2026-11-26T11:20:36Z |
+| W1 | F03 Gateway simulado & Dispatcher | [#3](https://github.com/pizolatoguilherme/mba-desafio-08-catraca/pull/3) | 2026-11-26T11:04:56Z | 2026-11-26T11:33:14Z |
+| W4 | F06 API de parceiros | [#6](https://github.com/pizolatoguilherme/mba-desafio-08-catraca/pull/6) | 2026-11-26T12:35:57Z | 2026-11-26T17:11:20Z |
+| W4 | F07 Check-in & Painel | [#7](https://github.com/pizolatoguilherme/mba-desafio-08-catraca/pull/7) | 2026-11-26T12:36:18Z | 2026-11-26T12:55:01Z |
+
+```bash
+scripts/check-parallel.sh 2 3   # OK #2 primeiro < #3 último; OK #3 primeiro < #2 último
+scripts/check-parallel.sh 6 7   # OK #6 primeiro < #7 último; OK #7 primeiro < #6 último
+```
+
+As waves sequenciais também foram integradas por PR: [#1](https://github.com/pizolatoguilherme/mba-desafio-08-catraca/pull/1) (F01), [#4](https://github.com/pizolatoguilherme/mba-desafio-08-catraca/pull/4) (F04), [#5](https://github.com/pizolatoguilherme/mba-desafio-08-catraca/pull/5) (F05) e [#8](https://github.com/pizolatoguilherme/mba-desafio-08-catraca/pull/8) (F08).
 
 ## Decisões
 
-Resumo a partir do [PRD §1](docs/PRD.md); o texto final é completado ao longo das waves.
+As decisões detalhadas, que prevalecem sobre as specs, estão em [`docs/architecture.md` §8](docs/architecture.md).
 
 - **Stack e por quê:** Node.js 22 + TypeScript, Fastify 5 com páginas server-side em EJS (formulários + redirect, sem SPA), PostgreSQL 16 com SQL explícito (`pg`, sem ORM), tudo via Docker Compose. É uma stack pequena, com transações e locks do Postgres à mão (essenciais para R07), testável com `app.inject()` contra um Postgres real e que sobe num clone limpo só com Docker.
-- **R07 sob concorrência:** toda operação que lê ou altera vagas ou preço de um evento (compra, edição, publicação, cancelamento) faz `SELECT … FOR UPDATE` na linha do evento dentro de uma transação. As compras do mesmo evento são serializadas no lock e a contagem de vagas (`pending` + `confirmed`) é feita dentro dele, então 30 compras simultâneas para 5 vagas resultam em exatamente 5 × `202` e 25 × `409`.
-- **Gateway assíncrono:** a compra grava o ticket `pending` e uma linha em `payments` na mesma transação e, depois do commit, aciona o dispatcher (com polling de 250 ms como rede de segurança). O dispatcher processa cada pagamento concorrentemente e aplica o resultado numa transação com `FOR SHARE` no evento, só se o ticket ainda estiver `pending` e o evento não estiver cancelado.
+- **R07 sob concorrência:** toda operação que lê ou altera vagas ou preço de um evento (compra, edição, publicação, cancelamento) faz `SELECT … FOR UPDATE` na linha do evento dentro de uma transação. As compras do mesmo evento são serializadas no lock e a contagem de vagas (`pending` + `confirmed`) é feita dentro dele, então 30 compras simultâneas para 5 vagas resultam em exatamente 5 × `202` e 25 × `409`. A vitrine e a API usam a mesma função de compra (`purchaseTicket`), portanto disputam o mesmo lock. Provas: teste de integração com 30 compras simultâneas × 20 rodadas em eventos novos (com um controle negativo sem o lock, que vende demais), e `scripts/burst.sh 10`, que repete o comando literal do passo 15 em 10 eventos novos.
+- **Preço e receita:** cada ingresso guarda o preço do momento da compra (`price_cents`); a receita do painel soma só os confirmados, cada um pelo seu preço, e estornados nunca entram como receita.
+- **Cancelamento (R11):** numa única transação, com o mesmo lock do evento: o evento vira `cancelled` e um único `UPDATE tickets … CASE` passa confirmados a `refunded` e pendentes a `cancelled`. Edição, publicação e compra passam a ser recusadas; vitrine e API deixam de listar o evento; o check-in responde "Evento cancelado".
+- **Gateway assíncrono:** a compra grava o ticket `pending` e uma linha em `payments` na mesma transação e, depois do commit, aciona o dispatcher (com polling de 250 ms como rede de segurança). O dispatcher processa cada pagamento concorrentemente e aplica o resultado numa transação com `FOR SHARE` no evento, só se o ticket ainda estiver `pending` e o evento não estiver cancelado. Assim, uma resposta tardia (ex.: cartão final 0003, 30–40 s) depois do cancelamento não altera nada. A compra responde na hora (`202`/redirect) sem esperar o gateway, e pagamentos que estavam em andamento são retomados se o app reiniciar.
 - **Isolamento da avaliação:** quem implementa não avalia. Cada feature é avaliada por um subagente de contexto vazio, que recebe só o contrato e o commit, e grava um relatório novo e imutável em `docs/features/<feature>/reports/` (um commit por relatório). O estado de cada feature fica em [`state/project-state.json`](state/project-state.json).
+  - Ferramenta: Claude Code, com subagentes. O implementador roda numa git worktree isolada (`isolation: "worktree"`), com projeto Compose e porta próprios. O avaliador é outro subagente, iniciado sem nenhum contexto do implementador e sem acesso à conversa, que recebe apenas o prompt [`prompts/evaluator.md`](prompts/evaluator.md) preenchido (feature, branch, porta). Ele clona o repositório do GitHub numa pasta nova e avalia o commit `HEAD` da branch.
+  - Um FAIL gera correção por um terceiro agente ([`prompts/fixer.md`](prompts/fixer.md)) e uma reavaliação, que produz um relatório novo; relatórios antigos nunca são editados.
+  - Integração: cada PR só é mergeado com o relatório mais recente aprovado e o CI (`npm run gates`) verde; depois de cada wave a `main` é validada num clone limpo (`up`, `down`, `up`, `gates`).
+  - Validação final: um avaliador independente roda o Fluxo do avaliador completo (passos 1–18) contra a `main` num clone limpo; o relatório está em [`docs/final-validation/`](docs/final-validation/).
