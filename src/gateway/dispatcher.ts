@@ -1,4 +1,4 @@
-import type { Db } from '../db.js';
+import { withTransaction, type Db } from '../db.js';
 import type { GatewayResult, PaymentGateway } from './simulated.js';
 
 /**
@@ -13,10 +13,35 @@ export async function enqueuePayment(c: Db, ticketId: string, cardLast4: string)
   await c.query('INSERT INTO payments (ticket_id, card_last4) VALUES ($1, $2)', [ticketId, cardLast4]);
 }
 
+/**
+ * Aplica a resposta do gateway ao ticket (R08), com guarda (R11): só um ticket 'pending' de evento
+ * não cancelado muda. O FOR SHARE no evento conflita com o FOR UPDATE do cancelamento (F08), então
+ * as duas operações são serializadas; a ordem de lock é evento -> ticket, igual à da compra.
+ * O pagamento termina 'done' mesmo quando a guarda recusa, para não ser reprocessado.
+ * Retorna true só se o ticket foi alterado.
+ */
 export async function applyGatewayResult(ticketId: string, result: GatewayResult): Promise<boolean> {
-  void ticketId;
-  void result;
-  throw new Error('F03: não implementado');
+  return withTransaction(async (c) => {
+    const ev = await c.query<{ status: string }>(
+      `SELECT e.status FROM tickets t JOIN events e ON e.id = t.event_id WHERE t.id = $1 FOR SHARE OF e`,
+      [ticketId],
+    );
+    if (ev.rowCount === 0) return false;
+
+    let changed = false;
+    if (ev.rows[0].status !== 'cancelled') {
+      const upd = await c.query(
+        `UPDATE tickets SET status = $2, updated_at = now() WHERE id = $1 AND status = 'pending'`,
+        [ticketId, result === 'approved' ? 'confirmed' : 'declined'],
+      );
+      changed = upd.rowCount === 1;
+    }
+    await c.query(`UPDATE payments SET state = 'done', result = $2, completed_at = now() WHERE ticket_id = $1`, [
+      ticketId,
+      result,
+    ]);
+    return changed;
+  });
 }
 
 export interface Dispatcher {
