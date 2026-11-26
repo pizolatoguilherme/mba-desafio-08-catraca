@@ -57,6 +57,8 @@ const COLLECT_SQL = `UPDATE payments SET state = 'in_flight', started_at = now()
   WHERE id IN (SELECT id FROM payments WHERE state = 'requested' ORDER BY id FOR UPDATE SKIP LOCKED LIMIT ${BATCH})
   RETURNING id, ticket_id, card_last4`;
 
+const RECOVER_SQL = `UPDATE payments SET state = 'requested', started_at = NULL WHERE state = 'in_flight'`;
+
 const REQUEUE_SQL = `UPDATE payments SET state = 'requested', started_at = NULL WHERE ticket_id = $1 AND state = 'in_flight'`;
 
 interface CollectedRow {
@@ -79,6 +81,8 @@ export function createDispatcher(opts: { gateway: PaymentGateway; pollMs: number
   let timer: NodeJS.Timeout | null = null;
   let collecting: Promise<void> | null = null;
   let kickPending = false;
+  // A primeira coleta depois de cada start() é precedida do reset in_flight -> requested.
+  let recoverPending = false;
   // Autorização + aplicação da geração atual (para idle()).
   let inFlight = new Set<Promise<void>>();
   // Aplicações (transações no banco) já iniciadas, de qualquer geração (para stop() e idle()).
@@ -145,6 +149,12 @@ export function createDispatcher(opts: { gateway: PaymentGateway; pollMs: number
     do {
       kickPending = false;
       try {
+        if (recoverPending) {
+          // Há uma única instância de app: todo in_flight encontrado no arranque é de um processo
+          // (ou de uma geração) que parou antes de aplicar o resultado. Volta para a fila.
+          await query(RECOVER_SQL);
+          recoverPending = false;
+        }
         const { rows } = await query<CollectedRow>(COLLECT_SQL);
         if (gen !== generation) return; // parado durante a coleta: as linhas voltam no próximo start()
         for (const row of rows) launch(row, gen);
@@ -173,6 +183,7 @@ export function createDispatcher(opts: { gateway: PaymentGateway; pollMs: number
     start() {
       if (running) return;
       running = true;
+      recoverPending = true;
       trigger();
     },
 
