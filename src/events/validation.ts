@@ -1,4 +1,4 @@
-import { parseLocalDateTime, parsePriceToCents, toIsoWithOffset } from '../format.js';
+import { formatBRL, parseLocalDateTime, parsePriceToCents, toIsoWithOffset } from '../format.js';
 import type { EventRow } from './repo.js';
 
 export type ValidEventInput = { name: string; venue: string; startsAt: Date; capacity: number; priceCents: number };
@@ -146,3 +146,6 @@ export function eventToFormValues(e: EventRow): EventFormValues {
 }
 
 export const EMPTY_FORM_VALUES: EventFormValues = { name: '', venue: '', startsAt: '', capacity: '', price: '' };
+
+/** Formatadores disponíveis nas views de F04 (e nos partials, que recebem os locals completos). */
+export const viewHelpers = { formatBRL, formatEventDateTime, eventStatusLabel } as const;
