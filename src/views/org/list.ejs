@@ -1,0 +1,24 @@
+<section data-page="org-events">
+  <h1>Meus eventos</h1>
+  <p><a href="/org/events/new" data-action="new">Novo evento</a></p>
+<% if (events.length === 0) { -%>
+  <p data-empty>Você ainda não criou eventos.</p>
+<% } else { -%>
+  <table data-list="org-events">
+    <thead>
+      <tr><th>Nome</th><th>Data e hora</th><th>Status</th><th>Lotação</th><th>Vagas disponíveis</th></tr>
+    </thead>
+    <tbody>
+<% for (const e of events) { -%>
+      <tr data-event-id="<%= e.id %>" data-event-status="<%= e.status %>">
+        <td><a href="/org/events/<%= e.id %>" data-field="name"><%= e.name %></a></td>
+        <td data-field="startsAt"><%= formatEventDateTime(e.starts_at) %></td>
+        <td data-field="status"><%= eventStatusLabel(e.status) %></td>
+        <td data-field="capacity"><%= e.capacity %></td>
+        <td data-field="available"><%= e.available %></td>
+      </tr>
+<% } -%>
+    </tbody>
+  </table>
+<% } -%>
+</section>
