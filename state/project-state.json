@@ -1,6 +1,6 @@
 {
   "project": "catraca",
-  "updatedAt": "2026-11-26T18:30:00-03:00",
+  "updatedAt": "2026-11-26T18:45:00-03:00",
   "statusLegend": ["planned", "in_progress", "implemented", "evaluating", "changes_requested", "done"],
   "features": {
     "F01": { "name": "Fundação & Harness", "wave": 0, "branch": "feat/F01-fundacao", "status": "done", "latestReport": "docs/features/F01-fundacao/reports/20261125-202452-32af6eb.md", "pr": "https://github.com/pizolatoguilherme/mba-desafio-08-catraca/pull/1" },
@@ -8,7 +8,7 @@
     "F03": { "name": "Gateway simulado & Dispatcher", "wave": 1, "branch": "feat/F03-gateway", "status": "done", "latestReport": "docs/features/F03-gateway/reports/20261126-181605-93d4b57.md", "pr": "https://github.com/pizolatoguilherme/mba-desafio-08-catraca/pull/3" },
     "F04": { "name": "Eventos", "wave": 2, "branch": "feat/F04-eventos", "status": "done", "latestReport": "docs/features/F04-eventos/reports/20261126-085953-896c688.md", "pr": "https://github.com/pizolatoguilherme/mba-desafio-08-catraca/pull/4" },
     "F05": { "name": "Compras & Meus ingressos", "wave": 3, "branch": "feat/F05-compras", "status": "done", "latestReport": "docs/features/F05-compras/reports/20261126-092708-4a818fd.md", "pr": "https://github.com/pizolatoguilherme/mba-desafio-08-catraca/pull/5" },
-    "F06": { "name": "API de parceiros", "wave": 4, "branch": "feat/F06-api-parceiros", "status": "done", "latestReport": "docs/features/F06-api-parceiros/reports/20261126-140638-9d91f32.md", "pr": "https://github.com/pizolatoguilherme/mba-desafio-08-catraca/pull/6" },
+    "F06": { "name": "API de parceiros", "wave": 4, "branch": "feat/F06-api-parceiros", "status": "done", "latestReport": "docs/features/F06-api-parceiros/reports/20261126-182838-87d4bfd.md", "pr": "https://github.com/pizolatoguilherme/mba-desafio-08-catraca/pull/6" },
     "F07": { "name": "Check-in & Painel", "wave": 4, "branch": "feat/F07-checkin-painel", "status": "done", "latestReport": "docs/features/F07-checkin-painel/reports/20261126-095329-00471bd.md", "pr": "https://github.com/pizolatoguilherme/mba-desafio-08-catraca/pull/7" },
     "F08": { "name": "Cancelamento", "wave": 5, "branch": "feat/F08-cancelamento", "status": "done", "latestReport": "docs/features/F08-cancelamento/reports/20261126-145140-e6a6599.md", "pr": "https://github.com/pizolatoguilherme/mba-desafio-08-catraca/pull/8" }
   }
