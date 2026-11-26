@@ -7,6 +7,7 @@ import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, ty
 import { config } from './config.js';
 import { pool, query } from './db.js';
 import { featurePlugins } from './features.js';
+import { dispatcher } from './gateway/index.js';
 
 // Resolve a partir de src/*.ts (vitest) e de dist/*.js (produção): as views ficam sempre em src/views.
 const VIEWS_DIR = fileURLToPath(new URL('../src/views/', import.meta.url));
@@ -53,6 +54,11 @@ export async function buildApp(opts?: { startDispatcher?: boolean }): Promise<Fa
       reply.code(400).send({ error: 'Bad Request', message: error.message, statusCode: 400 });
     },
   });
+
+  if (opts?.startDispatcher ?? true) {
+    app.addHook('onReady', async () => { dispatcher.start(); });
+    app.addHook('preClose', async () => { await dispatcher.stop(); });
+  }
 
   await app.register(formbody);
   await app.register(cookie);
