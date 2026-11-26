@@ -9,7 +9,7 @@ async function timed(gw: SimulatedGateway, last4: string): Promise<{ result: Gat
 
 describe('F03 gateway simulado', () => {
   it('decide aplica a tabela de finais com rnd nos extremos', () => {
-    const fast = [2000, 3000, 4000];
+    const fast = [2000, 2500, 3000];
     const slow = [30000, 35000, 40000];
     const table: Array<[string, GatewayResult, number[]]> = [
       ['0001', 'approved', fast],
@@ -34,7 +34,7 @@ describe('F03 gateway simulado', () => {
       const d = decide('0001');
       expect(d.result).toBe('approved');
       expect(d.delayMs).toBeGreaterThanOrEqual(2000);
-      expect(d.delayMs).toBeLessThanOrEqual(4000);
+      expect(d.delayMs).toBeLessThanOrEqual(3000);
     }
   });
 
@@ -69,9 +69,9 @@ describe('F03 gateway simulado', () => {
   it('a escala multiplica os atrasos de todos os finais', async () => {
     const gw = new SimulatedGateway({ scale: 0.01, rnd: () => 0.5 });
     const cases: Array<[string, GatewayResult, number, number]> = [
-      ['0001', 'approved', 28, 90],
-      ['0002', 'declined', 28, 90],
-      ['0009', 'declined', 28, 90],
+      ['0001', 'approved', 23, 90],
+      ['0002', 'declined', 23, 90],
+      ['0009', 'declined', 23, 90],
       ['0003', 'approved', 345, 420],
       ['0004', 'declined', 345, 420],
     ];
