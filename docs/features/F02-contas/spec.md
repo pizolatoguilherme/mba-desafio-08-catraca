@@ -165,6 +165,7 @@ test/f02/password.test.ts  test/f02/guards.test.ts  test/f02/layout.test.ts
 - `src/views/layout.ejs`: só o conteúdo de `<nav data-nav>`.
 - `test/helpers.ts`: acrescenta `loginAs` no fim do arquivo.
 - `state/project-state.json`: só a linha da entrada `F02`. Não mexe em `updatedAt` nem nas outras features, para reduzir o conflito com F03.
+- **(registrado na implementação)** `test/f01/http.test.ts`: o teste `rota inexistente responde 404 com error.ejs` passa a chamar `usePlugins()` (só o core) antes de `buildApp`. Ele usava os `featurePlugins` reais e esperava 404 para `/org/events/evt_inexistente/x` como visitante; com o hook D3, esse caminho responde 302 (§4.2, questão 2). O teste continua verificando o 404 genérico do core, que é o seu objetivo; nenhuma asserção foi removida.
 
 **Não altera:** `src/server.ts`, `package.json`/`package-lock.json`, `migrations/`, `compose*.yaml`, `Dockerfile`, `scripts/`, nada de `src/gateway/` (F03).
 
@@ -226,3 +227,5 @@ test/f02/password.test.ts  test/f02/guards.test.ts  test/f02/layout.test.ts
 5. **Senha mínima de 6 caracteres (D12)** é uma decisão desta spec, não do brief. O Fluxo do avaliador (passo 5) não fixa a senha; se o avaliador usar uma senha curta, verá a mensagem e precisará de outra senha.
 6. **Conflito previsível com F03 em `state/project-state.json`.** As entradas F02 e F03 são linhas adjacentes, e o git trata a edição de linhas adjacentes como conflito. Quem fizer o merge por último resolve o conflito trivialmente, mantendo as duas linhas. Nenhum dos dois toca em `updatedAt`.
 7. **`GET /logout` é sujeito a CSRF de logout.** O `architecture.md` o pede "por conveniência". O impacto é só deslogar o usuário, e CSRF está fora de escopo (PRD §10).
+8. **(registrado na implementação) Nav vazio sem o plugin de auth.** O `layout.ejs` só desenha o conteúdo de `<nav data-nav>` quando `locals.user !== undefined` (o hook D2 sempre define `null` ou o usuário). Sem `authPlugin` (testes de F01 que esvaziam `featurePlugins`), o nav continua exatamente `<nav data-nav></nav>`, como o teste de F01 exige.
+9. **(registrado na implementação) Tipo de `reply.locals`.** O `@fastify/view` cria `reply.locals` em runtime, mas não o declara nos tipos; `src/auth/plugin.ts` acrescenta `locals: Record<string, unknown>` a `FastifyReply` na mesma augmentation de `request.user`.

@@ -109,3 +109,19 @@ export async function insertTicket(p: {
   );
   return { id, code };
 }
+
+/**
+ * (F02) Faz POST /login (form-urlencoded) e devolve "sid=<valor>", pronto para o header Cookie.
+ * Exige 303 + Set-Cookie sid; senão lança Error(`loginAs falhou: <status>`).
+ */
+export async function loginAs(app: import('fastify').FastifyInstance, email: string, password: string): Promise<string> {
+  const res = await app.inject({
+    method: 'POST',
+    url: '/login',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    payload: new URLSearchParams({ email, password }).toString(),
+  });
+  const sid = res.cookies.find((c) => c.name === 'sid' && c.value);
+  if (res.statusCode !== 303 || !sid) throw new Error(`loginAs falhou: ${res.statusCode}`);
+  return `sid=${sid.value}`;
+}

@@ -1,0 +1,12 @@
+<section data-page="signup">
+  <h1>Criar conta</h1>
+  <% if (error) { %><p data-form-error><%= error %></p><% } %>
+  <form method="post" action="/signup">
+    <p><label>Nome<br><input name="name" value="<%= form.name %>" autocomplete="name" required></label></p>
+    <p><label>E-mail<br><input name="email" type="email" value="<%= form.email %>" autocomplete="email" required></label></p>
+    <p><label>Senha (mínimo 6 caracteres)<br><input name="password" type="password" autocomplete="new-password" required></label></p>
+    <input type="hidden" name="next" value="<%= next %>">
+    <p><button type="submit">Criar conta</button></p>
+  </form>
+  <p>Já tem conta? <a href="/login<%= next !== '/' ? '?next=' + encodeURIComponent(next) : '' %>">Entrar</a></p>
+</section>
