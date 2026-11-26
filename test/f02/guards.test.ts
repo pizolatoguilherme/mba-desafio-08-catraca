@@ -105,7 +105,7 @@ describe('F02 guards', () => {
     expect(res2.statusCode).toBe(302);
     expect(res2.headers.location).toBe('/org/events');
     // Organizador passa pelo hook: rota inexistente de /org/* cai no 404 genérico.
-    const missing = await app.inject({ method: 'GET', url: '/org/events', headers: { cookie: seed } });
+    const missing = await app.inject({ method: 'GET', url: '/org/rota-inexistente', headers: { cookie: seed } });
     expect(missing.statusCode).toBe(404);
   });
 
