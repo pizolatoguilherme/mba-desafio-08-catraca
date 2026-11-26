@@ -1,6 +1,8 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { FastifyError, FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 import { config } from '../config.js';
+import { type EventRow, listOnSaleEvents } from '../events/repo.js';
+import { toIsoWithOffset } from '../format.js';
 import { validatePurchaseInput } from '../purchases/service.js';
 
 // API de parceiros (contrato fixo de docs/brief.md). Spec: docs/features/F06-api-parceiros/spec.md.
@@ -52,6 +54,23 @@ export function parsePurchaseBody(req: FastifyRequest): PurchaseBody {
   return { ok: true, buyerEmail: buyerEmail as string, cardNumber: cardNumber as string };
 }
 
+/** Item da listagem, campo a campo (nunca spread de linha do banco). */
+export function serializeEvent(e: EventRow & { available: number }): {
+  id: string;
+  name: string;
+  startsAt: string;
+  priceCents: number;
+  availableSeats: number;
+} {
+  return {
+    id: e.id,
+    name: e.name,
+    startsAt: toIsoWithOffset(e.starts_at),
+    priceCents: Number(e.price_cents),
+    availableSeats: Number(e.available),
+  };
+}
+
 const TICKET_PATH = /^\/api\/partner\/tickets\/[^/]+\/?$/;
 const PURCHASE_PATH = /^\/api\/partner\/events\/[^/]+\/purchases\/?$/;
 
@@ -94,7 +113,10 @@ export const partnerRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(404).send({ error: 'not_found' });
   });
 
-  app.get('/events', async (_req, reply) => reply.code(200).send([]));
+  app.get('/events', async (_req, reply) => {
+    const events = await listOnSaleEvents();
+    return reply.code(200).send(events.map(serializeEvent));
+  });
   app.post('/events/:eventId/purchases', async (req, reply) => {
     const body = parsePurchaseBody(req);
     if (!body.ok) return invalidRequest(reply);
