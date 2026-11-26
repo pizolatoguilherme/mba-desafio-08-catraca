@@ -5,6 +5,7 @@ import { eventsPublicRoutes } from './events/routes-public.js';
 import { purchasesPlugin } from './purchases/routes.js';
 import { partnerPlugin } from './partner/plugin.js';
 import { checkinPlugin } from './checkin/routes.js';
+import { cancelPlugin } from './cancel/routes.js';
 
 /**
  * Plugins das features, registrados por buildApp em ordem, depois do core.
@@ -16,4 +17,5 @@ export const featurePlugins: FastifyPluginAsync[] = [
   /* F05 */ purchasesPlugin,
   /* F06 */ partnerPlugin,
   /* F07 */ checkinPlugin,
+  /* F08 */ cancelPlugin,
 ];
