@@ -47,6 +47,8 @@ describe('C-F01-20 http', () => {
   });
 
   it('rota inexistente responde 404 com error.ejs', async () => {
+    // Só o core: com F02, visitante em /org/* inexistente é barrado (302) antes do 404 (spec F02 D3).
+    usePlugins();
     app = await buildApp({ startDispatcher: false });
     for (const url of ['/rota-que-nao-existe', '/org/events/evt_inexistente/x']) {
       const res = await app.inject({ method: 'GET', url });

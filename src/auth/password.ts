@@ -1,4 +1,4 @@
-import { randomBytes, scrypt, type ScryptOptions } from 'node:crypto';
+import { randomBytes, scrypt, timingSafeEqual, type ScryptOptions } from 'node:crypto';
 
 // Parâmetros fixos (F02 verifica com os mesmos): salt de 16 bytes brutos, keylen 64, N=16384, r=8, p=1.
 const SALT_BYTES = 16;
@@ -16,4 +16,21 @@ export async function hashPassword(p: string): Promise<string> {
   const salt = randomBytes(SALT_BYTES);
   const key = await scryptAsync(p, salt, KEY_LEN, SCRYPT_OPTS);
   return `scrypt$${salt.toString('hex')}$${key.toString('hex')}`;
+}
+
+const HASH_RE = /^scrypt\$([0-9a-f]{32})\$([0-9a-f]{128})$/;
+
+/** Recalcula o scrypt com o salt do hash e compara com timingSafeEqual. Hash malformado -> false (nunca lança). */
+export async function verifyPassword(p: string, h: string): Promise<boolean> {
+  if (typeof p !== 'string' || typeof h !== 'string') return false;
+  const m = HASH_RE.exec(h);
+  if (!m) return false;
+  const salt = Buffer.from(m[1], 'hex');
+  const expected = Buffer.from(m[2], 'hex');
+  try {
+    const key = await scryptAsync(p, salt, KEY_LEN, SCRYPT_OPTS);
+    return key.length === expected.length && timingSafeEqual(key, expected);
+  } catch {
+    return false;
+  }
 }

@@ -18,7 +18,20 @@
 <body>
   <header>
     <a href="/" data-brand>Catraca</a>
-    <nav data-nav></nav>
+    <nav data-nav><%# F02: locals.user é null (visitante) ou o usuário; undefined só sem o plugin de auth. %><% if (locals.user !== undefined) { -%>
+<% if (locals.user) { -%>
+      <span data-current-user><%= locals.user.name %></span>
+<% if (locals.user.role === 'organizer') { -%>
+      <a href="/org/events">Meus eventos</a>
+<% } else { -%>
+      <a href="/me/tickets">Meus ingressos</a>
+<% } -%>
+      <form method="post" action="/logout" data-logout><button type="submit">Sair</button></form>
+<% } else { -%>
+      <a href="/login" data-nav-login>Entrar</a>
+      <a href="/signup" data-nav-signup>Criar conta</a>
+<% } -%>
+    <% } %></nav>
   </header>
   <main><%- body %></main>
 </body>
