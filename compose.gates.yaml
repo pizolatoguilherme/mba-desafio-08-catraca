@@ -1,0 +1,32 @@
+# Gates (lint + typecheck + testes) em projeto Compose isolado: ${COMPOSE_PROJECT_NAME:-catraca}-gates.
+# O banco se chama "testdb" (e não "db") para nunca recriar o banco do produto, mesmo sem -p.
+name: catraca-gates
+
+services:
+  testdb:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: catraca
+      POSTGRES_PASSWORD: catraca
+      POSTGRES_DB: catraca
+      TZ: America/Sao_Paulo
+      PGTZ: America/Sao_Paulo
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U catraca -d catraca"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  gates:
+    build:
+      context: .
+      target: dev
+    depends_on:
+      testdb:
+        condition: service_healthy
+    environment:
+      TZ: America/Sao_Paulo
+      DATABASE_URL: postgres://catraca:catraca@testdb:5432/catraca
+      NODE_ENV: test
