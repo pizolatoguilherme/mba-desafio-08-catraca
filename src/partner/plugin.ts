@@ -3,7 +3,7 @@ import type { FastifyError, FastifyPluginAsync, FastifyReply, FastifyRequest } f
 import { config } from '../config.js';
 import { type EventRow, listOnSaleEvents } from '../events/repo.js';
 import { toIsoWithOffset } from '../format.js';
-import { purchaseTicket, validatePurchaseInput } from '../purchases/service.js';
+import { findTicketById, purchaseTicket, type TicketRow, validatePurchaseInput } from '../purchases/service.js';
 
 // API de parceiros (contrato fixo de docs/brief.md). Spec: docs/features/F06-api-parceiros/spec.md.
 
@@ -73,6 +73,18 @@ export function serializeEvent(e: EventRow & { available: number }): {
 
 // Formato de newId (architecture.md §5): fora dele, 404 sem tocar no banco.
 const EVENT_ID = /^evt_[a-z0-9]{10}$/;
+const TICKET_ID = /^tkt_[a-z0-9]{10}$/;
+
+/** Consulta de ingresso, campo a campo; status sem tradução e checkedIn derivado de checked_in_at. */
+export function serializeTicket(t: TicketRow): { ticketId: string; code: string; eventId: string; status: string; checkedIn: boolean } {
+  return {
+    ticketId: t.id,
+    code: t.code,
+    eventId: t.event_id,
+    status: t.status,
+    checkedIn: t.checked_in_at !== null,
+  };
+}
 
 const TICKET_PATH = /^\/api\/partner\/tickets\/[^/]+\/?$/;
 const PURCHASE_PATH = /^\/api\/partner\/events\/[^/]+\/purchases\/?$/;
@@ -139,7 +151,13 @@ export const partnerRoutes: FastifyPluginAsync = async (app) => {
     if (r.error === 'sold_out') return reply.code(409).send({ error: 'sold_out' });
     return invalidRequest(reply);
   });
-  app.get('/tickets/:ticketId', async (_req, reply) => reply.code(501).send({ error: 'not_implemented' }));
+  // Ingressos de qualquer canal (vitrine ou parceiro), por id.
+  app.get<{ Params: { ticketId: string } }>('/tickets/:ticketId', async (req, reply) => {
+    const { ticketId } = req.params;
+    const t = TICKET_ID.test(ticketId) ? await findTicketById(ticketId) : null;
+    if (!t) return reply.code(404).send({ error: 'ticket_not_found' });
+    return reply.code(200).send(serializeTicket(t));
+  });
 };
 
 /**

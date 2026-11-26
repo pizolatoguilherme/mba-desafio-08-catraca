@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../../src/server.js';
-import { createEvent, createUser, resetDb } from '../helpers.js';
-import { apiBuy, CARD_0001, expectJson, ticketCount } from './_support.js';
+import { createEvent, createUser, insertTicket, resetDb } from '../helpers.js';
+import { apiBuy, apiGet, CARD_0001, expectJson, ticketCount } from './_support.js';
 
 const OK = JSON.stringify({ buyerEmail: 'x@example.com', cardNumber: CARD_0001 });
 
@@ -71,5 +71,15 @@ describe('F06 robustez aos defaults do framework', () => {
       expectJson(res, 404, { error: 'event_not_available' });
     }
     expect(await ticketCount()).toBe(0);
+
+    const t = await insertTicket({ eventId: open });
+    for (const id of [...odd.map((x) => x.replace(/^evt_/, 'tkt_').replace('EVT_', 'TKT_')), t.id.toUpperCase(), `${t.id}%20`]) {
+      const res = await apiGet(app, `/api/partner/tickets/${id}`);
+      expect([id, res.statusCode]).toEqual([id, 404]);
+      expectJson(res, 404, { error: 'ticket_not_found' });
+    }
+    // HEAD também segue o 404 da rota, sem chave continua 401.
+    expect((await app.inject({ method: 'HEAD', url: '/api/partner/tickets/tkt_%00', headers: { 'x-api-key': 'catraca-parceiro-2026' } })).statusCode).toBe(404);
+    expect((await apiGet(app, '/api/partner/tickets/tkt_%00', null)).statusCode).toBe(401);
   });
 });
