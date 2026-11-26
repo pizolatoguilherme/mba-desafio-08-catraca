@@ -8,11 +8,14 @@ import { purchaseTicket } from '../../src/purchases/service.js';
 import { buildApp } from '../../src/server.js';
 import { createEvent, insertTicket, loginAs, resetDb } from '../helpers.js';
 import {
+  apiInject,
   CARD_0001,
   CARD_0003,
+  checkinResult,
   editForm,
   getPage,
   ORG_A,
+  panelMetrics,
   PARTICIPANT,
   postForm,
   SEED_PASSWORD,
@@ -147,5 +150,112 @@ describe('F08 integração do cancelamento com F03, F04 e F05', () => {
     expect(row(conf.code)).toContain('>estornado<');
     expect(row(pend.code)).toContain('data-ticket-status="cancelled"');
     expect(row(pend.code)).toContain('>cancelado<');
+  });
+});
+
+describe('F08 integração do cancelamento com F06 e F07', () => {
+  let app: FastifyInstance;
+  let orgA: string;
+  let cookieA: string;
+  let d: Dispatcher | null = null;
+
+  beforeAll(async () => {
+    app = await buildApp({ startDispatcher: false });
+    await app.ready();
+  });
+
+  beforeEach(async () => {
+    await resetDb();
+    orgA = await userIdByEmail(ORG_A);
+    cookieA = await loginAs(app, ORG_A, SEED_PASSWORD);
+  });
+
+  afterEach(async () => {
+    if (d) await d.stop();
+    d = null;
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('C-F08-15 XC-F08-F06-01 API de parceiros exclui o evento, recusa compra e mostra refunded e cancelled', async () => {
+    const ev = await createEvent({ organizerId: orgA, capacity: 5, name: 'API F08' });
+    const conf = await insertTicket({ eventId: ev.id, status: 'confirmed', channel: 'partner' });
+    const pend = await insertTicket({ eventId: ev.id, status: 'pending', channel: 'partner' });
+    const listBefore = await apiInject(app, 'GET', '/api/partner/events');
+    expect((JSON.parse(listBefore.body) as Array<{ id: string }>).map((e) => e.id)).toContain(ev.id);
+
+    expect(await cancelEvent(orgA, ev.id)).toEqual({ ok: true });
+
+    const list = await apiInject(app, 'GET', '/api/partner/events');
+    expect(list.statusCode).toBe(200);
+    expect((JSON.parse(list.body) as Array<{ id: string }>).map((e) => e.id)).not.toContain(ev.id);
+
+    const before = await snapshot();
+    const buyRes = await apiInject(app, 'POST', `/api/partner/events/${ev.id}/purchases`, {
+      buyerEmail: 'parceiro@example.com',
+      cardNumber: CARD_0001,
+    });
+    expect(buyRes.statusCode).toBe(404);
+    expect(buyRes.body).toBe('{"error":"event_not_available"}');
+    expect(await snapshot()).toEqual(before);
+
+    const tc = await apiInject(app, 'GET', `/api/partner/tickets/${conf.id}`);
+    expect(tc.statusCode).toBe(200);
+    expect(JSON.parse(tc.body)).toEqual({ ticketId: conf.id, code: conf.code, eventId: ev.id, status: 'refunded', checkedIn: false });
+    const tp = await apiInject(app, 'GET', `/api/partner/tickets/${pend.id}`);
+    expect(tp.statusCode).toBe(200);
+    expect(JSON.parse(tp.body)).toEqual({ ticketId: pend.id, code: pend.code, eventId: ev.id, status: 'cancelled', checkedIn: false });
+  });
+
+  it('C-F08-16 XC-F08-F06-02 checkedIn da API reflete o check-in de F07', async () => {
+    d = startTestDispatcher(0.01);
+    const ev = await createEvent({ organizerId: orgA, capacity: 3, name: 'CheckedIn F08' });
+    const buyRes = await apiInject(app, 'POST', `/api/partner/events/${ev.id}/purchases`, {
+      buyerEmail: 'checkin@example.com',
+      cardNumber: CARD_0001,
+    });
+    expect(buyRes.statusCode).toBe(202);
+    const t = JSON.parse(buyRes.body) as { ticketId: string; code: string; status: string };
+    expect(t.status).toBe('pending');
+    await waitFor(async () => (await ticketStatus(t.ticketId)) === 'confirmed', 5000);
+
+    const first = await apiInject(app, 'GET', `/api/partner/tickets/${t.ticketId}`);
+    expect(first.statusCode).toBe(200);
+    expect(first.body).toBe(JSON.stringify({ ticketId: t.ticketId, code: t.code, eventId: ev.id, status: 'confirmed', checkedIn: false }));
+
+    const ci = await postForm(app, `/org/events/${ev.id}/checkin`, cookieA, { code: t.code });
+    expect(checkinResult(ci.body)).toBe('Entrada liberada');
+
+    const second = await apiInject(app, 'GET', `/api/partner/tickets/${t.ticketId}`);
+    expect(second.statusCode).toBe(200);
+    expect(second.body).toBe(JSON.stringify({ ticketId: t.ticketId, code: t.code, eventId: ev.id, status: 'confirmed', checkedIn: true }));
+  });
+
+  it('C-F08-17 XC-F08-F07-01 check-in mostra Evento cancelado e o painel fica zerado com Estornados 2', async () => {
+    const ev = await createEvent({ organizerId: orgA, capacity: 5, priceCents: 5000, name: 'Painel F08' });
+    await insertTicket({ eventId: ev.id, status: 'confirmed', checkedIn: true });
+    const c2 = await insertTicket({ eventId: ev.id, status: 'confirmed' });
+    await insertTicket({ eventId: ev.id, status: 'pending' });
+
+    const res = await postForm(app, `/org/events/${ev.id}/cancel`, cookieA);
+    expect(res.statusCode).toBe(303);
+
+    const ci = await postForm(app, `/org/events/${ev.id}/checkin`, cookieA, { code: c2.code });
+    expect(ci.statusCode).toBe(200);
+    expect(checkinResult(ci.body)).toBe('Evento cancelado');
+    const bad = await postForm(app, `/org/events/${ev.id}/checkin`, cookieA, { code: 'ZZZZZZZZ' });
+    expect(checkinResult(bad.body)).toBe('Ingresso inválido para este evento');
+
+    const page = await getPage(app, `/org/events/${ev.id}`, cookieA);
+    expect(panelMetrics(page.body)).toEqual({
+      confirmed: '0',
+      pending: '0',
+      checkins: '0',
+      available: '0',
+      revenue: 'R$ 0,00',
+      refunded: '2',
+    });
   });
 });
