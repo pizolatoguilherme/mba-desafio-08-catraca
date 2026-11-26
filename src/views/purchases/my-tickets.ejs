@@ -1,0 +1,13 @@
+<h1>Meus ingressos</h1>
+<% if (tickets.length === 0) { -%>
+<p data-my-tickets-empty>Você ainda não tem ingressos.</p>
+<% } else { -%>
+<table data-my-tickets>
+  <thead><tr><th>Evento</th><th>Status</th><th>Código</th></tr></thead>
+  <tbody>
+<% for (const t of tickets) { -%>
+    <tr data-ticket-id="<%= t.id %>" data-ticket-code="<%= t.code %>" data-ticket-status="<%= t.status %>"><td data-col="event"><%= t.event_name %></td><td data-col="status"><%= t.label %></td><td data-col="code"><%= t.code %></td></tr>
+<% } -%>
+  </tbody>
+</table>
+<% } -%>
