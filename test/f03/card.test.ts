@@ -11,6 +11,8 @@ describe('F03 card', () => {
   it('isValidCardNumber rejeita entradas inválidas', () => {
     const invalid: unknown[] = [
       '',
+      '123',
+      '４０００００００００００００１',
       '400000000000001',
       '40000000000000011',
       '400000000000000a',
@@ -31,6 +33,7 @@ describe('F03 card', () => {
   });
 
   it('cardLast4 devolve os 4 últimos dígitos', () => {
+    expect(cardLast4('4000000000000004')).toBe('0004');
     expect(cardLast4('4000000000000001')).toBe('0001');
     expect(cardLast4('1234567812345678')).toBe('5678');
   });
